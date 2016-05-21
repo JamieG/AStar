@@ -4,92 +4,162 @@ namespace CapitalStaging
     using System.Collections.Generic;
     using System.Linq;
 
+    public class NodePriorityQueue : FastPriorityQueue<Node>
+    {
+        public NodePriorityQueue(int maxNodes) : base(maxNodes)
+        { }
+    }
+
     public class AStarSearch
     {
-        private readonly PriorityNodeStack _open;
-        private readonly Dictionary<int, Node> _closed;
-        private readonly IGrid _grid;
-        private readonly Node _start;
-        private readonly Node _goal;
-        private readonly Dictionary<int, int> _gScore;
+        public NodePriorityQueue Open { get; set; }
+        public IDictionary<ulong, Node> Closed { get; set; }
+        public Dictionary<Node, Node> Parent { get; set; }
+        public IDictionary<ulong, double> FHistory { get; set; }
+        public IDictionary<ulong, double> GHistory { get; set; }
+        public IGrid Grid { get; set; }
 
-        public AStarSearch(IGrid grid, Node start, Node goal)
+        public AStarSearch(IGrid grid)
         {
-            _open = new PriorityNodeStack();
-            _closed = new Dictionary<int, Node>();
-            _gScore = new Dictionary<int, int>();
+            Grid = grid;
 
-            _grid = grid;
-            _start = start;
-            _goal = goal;
-
-            _gScore.Add(_start.Key, 0);
-            _open.Push(Distance(_start, _goal), _start);
+            Open = new NodePriorityQueue(Grid.Width*Grid.Height);
+            Closed = new Dictionary<ulong, Node>();
+            Parent = new Dictionary<Node, Node>();
+            FHistory = new Dictionary<ulong, double>();
+            GHistory = new Dictionary<ulong, double>();
         }
 
-        private int Distance(Node from, Node to)
+        public Node Start { get; set; }
+        public Node Goal { get; set; }
+        
+        public double Heuristic(Node node)
         {
-            return (int)Math.Sqrt(Math.Pow(from.X - to.X, 2) + Math.Pow(from.Y - to.Y, 2));
+            return Math.Sqrt(Math.Pow(node.X - Goal.X, 2) + Math.Pow(node.Y - Goal.Y, 2));
         }
 
-        public IList<Node> Find()
+        public IList<Node> Find(Node start, Node goal)
         {
-            var cameFrom = new Dictionary<Node, Node>();
+            Start = start;
+            Goal = goal;
 
-            int maxSearch = 1000000;
+            Parent.Add(start, start);
+            Open.Enqueue(Start, Heuristic(Start));
 
-            while (_open.Any() && maxSearch >= 0)
+            while (Open.Count > 0)
             {
-                Node current = _open.Pop();
+                Node node = Open.Dequeue();
 
-                if (current == Node.Empty)
-                    throw new ApplicationException("Pathing error, lowest f score not found in open set!");
+                if (node.Id == Goal.Id)
+                    return BuildPath();
 
-                // Path found!
-                if (current.Key == _goal.Key)
-                    return BuildPath(cameFrom, current);
+                AddUpdate(Closed, node.Id, node);
 
-                _closed.Add(current.Key, current);
-
-                foreach (ProposedStep proposedStep in _grid.Neighbours(current))
+                foreach (ProposedStep step in Grid.Neighbours(node))
                 {
-                    Node neighbor = proposedStep.Node;
+                    Node neighour = step.Node;
 
-                    if (_closed.ContainsKey(neighbor.Key))
-                        continue;
-
-                    int gScore = _gScore[current.Key] + Distance(current, neighbor);
-
-                    if (!_open.Contains(neighbor.Key))
+                    if (!Closed.ContainsKey(neighour.Id))
                     {
-                        int fScore = gScore + _grid.Cost(proposedStep) + Distance(neighbor, _goal);
-                        _open.Push(fScore, neighbor);
-                    }
-                    else if (gScore >= _gScore[neighbor.Key])
-                    {
-                        continue; 
-                    }
+                        if (!Open.Contains(neighour))
+                        {
+                            AddUpdate(GHistory, neighour.Id, double.PositiveInfinity);
+                            TryRemove(Parent, neighour);
+                        }
 
-                    cameFrom[neighbor] = current;
-                    _gScore[neighbor.Key] = gScore;
+                        double gOld = TryGetValue(GHistory, neighour.Id);
+                        
+                        if (TryGetValue(GHistory, node.Id) + step.Direction.Cost < TryGetValue(GHistory, neighour.Id))
+                        {
+                            AddUpdate(Parent, neighour, node);
+                            AddUpdate(GHistory, neighour.Id, TryGetValue(GHistory, node.Id) + step.Direction.Cost);
+                        }
+
+                        if (TryGetValue(GHistory, neighour.Id) < gOld)
+                        {
+                            if (Open.Contains(neighour))
+                                Open.Remove(neighour);
+
+                            Open.Enqueue(neighour, TryGetValue(GHistory, neighour.Id) + Heuristic(neighour));
+                        }
+                    }
                 }
-
-                maxSearch--;
-
             }
 
             return new List<Node>();
         }
-        private IList<Node> BuildPath(Dictionary<Node, Node> cameFrom, Node current)
+
+        public void AddUpdate<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
+            if (!dictionary.ContainsKey(key))
+                dictionary.Add(key, value);
+            else
+                dictionary[key] = value;
+        }
+
+        public void TryRemove<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            if (dictionary.ContainsKey(key))
+                dictionary.Remove(key);
+        }
+
+        public TValue TryGetValue<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            if (dictionary.ContainsKey(key))
+                return dictionary[key];
+            return default(TValue);
+        }
+
+        public IList<Node> BuildPath()
+        {
+            Node current = Goal;
             var path = new Stack<Node>();
             path.Push(current);
-            while (cameFrom.ContainsKey(current))
+            do
             {
-                current = cameFrom[current];
+                current = Parent.First(n => n.Key.Id == current.Id).Value;
                 path.Push(current);
-            }
+            } while (current.Id != Start.Id);
             return path.ToList();
         }
     }
+
+    public class Node : FastPriorityQueueNode
+    {
+        public readonly int X;
+        public readonly int Y;
+
+        public ulong Id;
+
+        public Node(int x, int y)
+        {
+            X = x;
+            Y = y;
+
+            var sX = (ulong)x << 32;
+            var sY = (ulong)y;
+
+            Id = sX | sY;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[{0},{1}]", X, Y);
+        }
+
+        public class IdComparer : EqualityComparer<Node>
+        {
+            public override bool Equals(Node x, Node y)
+            {
+                return x.Id == y.Id;
+            }
+
+            public override int GetHashCode(Node obj)
+            {
+                return obj.Id.GetHashCode();
+            }
+        }
+    }
+
+
 }

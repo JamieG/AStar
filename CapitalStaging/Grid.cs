@@ -1,5 +1,6 @@
 namespace CapitalStaging
 {
+    using System;
     using System.Collections.Generic;
 
     public class Grid : IGrid
@@ -9,57 +10,62 @@ namespace CapitalStaging
         private readonly short _boundsMinY;
         private readonly short _boundsMaxY;
 
+        public int Width { get; set; }
+        public int Height { get; set; }
+
         public Grid(short width, short height)
         {
-            _boundsMinX = (short)-(width / 2);
-            _boundsMaxX = (short)(width / 2);
-            _boundsMinY = (short)-(height / 2);
-            _boundsMaxY = (short)(height / 2);
+            Width = width;
+            Height = height;
+
+            _boundsMinX = 1;
+            _boundsMaxX = (short) width;
+            _boundsMinY = 1;
+            _boundsMaxY = (short)height;
         }
 
-        private static readonly Node[] Directions = new[]
+        private static readonly StepDirection[] Directions = new[]
         {
             // Cardinal
-            new Node(-1, 0), // W
-            new Node(1, 0), // E
-            new Node(0, 1), // N 
-            new Node(0, -1), // S
+            new StepDirection(-1, 0, 1), // W
+            new StepDirection(1, 0, 1), // E
+            new StepDirection(0, 1, 1), // N 
+            new StepDirection(0, -1, 1), // S
             // Diagonal
-            new Node(-1, -1), // NW
-            new Node(-1, 1), // SW
-            new Node(1, -1), // NE
-            new Node(1, 1), // SE
+            new StepDirection(-1, -1, 1.4142135623730950488016887242097), // NW
+            new StepDirection(-1, 1, 1.4142135623730950488016887242097), // SW
+            new StepDirection(1, -1, 1.4142135623730950488016887242097), // NE
+            new StepDirection(1, 1, 1.4142135623730950488016887242097), // SE
         };
 
-        public IList<ProposedStep> Neighbours(Node node)
-        {
+        private readonly Dictionary<ulong, Node> _knownNodes = new Dictionary<ulong, Node>(); 
 
-            var steps = new List<ProposedStep>();
+        public IEnumerable<ProposedStep> Neighbours(Node node)
+        {
             for (int i = 0; i < Directions.Length; i++)
             {
-                var proposedNode = new Node((short)(node.X + Directions[i].X), (short)(node.Y + Directions[i].Y));
+                var proposedNode = new Node(node.X + Directions[i].X, node.Y + Directions[i].Y);
+
                 if (InBounds(proposedNode))
-                    steps.Add(new ProposedStep(proposedNode, i < 4 ? StepModifier.Cardinal : StepModifier.Diagonal));
+                {
+                    Node neighour = proposedNode;
+
+                    if (_knownNodes.ContainsKey(neighour.Id))
+                        neighour = _knownNodes[neighour.Id];
+                    else
+                        _knownNodes.Add(neighour.Id, neighour);
+
+                    yield return new ProposedStep(neighour, Directions[i]);
+                }
             }
-            return steps;
         }
 
-        public int Cost(ProposedStep node)
-        {
-            int cost = 0;
-
-            if (node.Modifiers.HasFlag(StepModifier.Cardinal))
-                cost += 4;
-            else if (node.Modifiers.HasFlag(StepModifier.Diagonal))
-                cost += 6;
-
-            return cost;
-        }
-
-        private bool InBounds(Node proposed)
+        public bool InBounds(Node proposed)
         {
             return proposed.X >= _boundsMinX && proposed.X <= _boundsMaxX &&
                    proposed.Y >= _boundsMinY && proposed.Y <= _boundsMaxY;
         }
+
+       
     }
 }

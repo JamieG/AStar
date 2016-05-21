@@ -35,6 +35,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -44,10 +45,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AStarSearch.cs" />
+    <Compile Include="FastPriorityQueue.cs" />
+    <Compile Include="FastPriorityQueueNode.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="IGrid.cs" />
     <Compile Include="Node.cs" />
-    <Compile Include="PriorityNodeStack.cs" />
+    <Compile Include="IPriorityQueue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProposedStep.cs" />

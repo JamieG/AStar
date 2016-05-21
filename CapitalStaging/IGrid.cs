@@ -4,7 +4,9 @@ namespace CapitalStaging
 
     public interface IGrid
     {
-        IList<ProposedStep> Neighbours(Node node);
-        int Cost(ProposedStep node);
+        IEnumerable<ProposedStep> Neighbours(Node node);
+        bool InBounds(Node proposedNode);
+        int Width { get; set; }
+        int Height { get; set; }
     }
 }
