@@ -22,7 +22,7 @@ namespace CapitalStaging
             int i = 1;
             short width = 100;
             short height = 100;
-            int runs = 50;
+            int runs = 100;
 
             var grid = new Grid(width, height);
 
@@ -33,7 +33,20 @@ namespace CapitalStaging
                 timer.Start();
 
                 Node start = new Node((short)(rnd.Next(1, width)), (short)(rnd.Next(1, height)));
+
+                if (grid.Collided(start.X, start.Y))
+                {
+                    x--;
+                    continue;
+                }
+
                 Node goal = new Node((short)(rnd.Next(1, width)), (short)(rnd.Next(1, height)));
+
+                if (grid.Collided(goal.X, goal.Y))
+                {
+                    x--;
+                    continue;
+                }
 
                 //Node start = new Node(10, 10);
                 //Node goal = new Node(90, 90);
@@ -72,6 +85,9 @@ namespace CapitalStaging
             using (var graphics = Graphics.FromImage(image))
             {
                 graphics.Clear(Color.Black);
+
+                foreach (Rectangle rectangle in Grid.Obstacles)
+                    graphics.FillRectangle(new SolidBrush(Color.White), rectangle.X*scalar, rectangle.Y*scalar, rectangle.Width*scalar, rectangle.Height*scalar);
 
                 foreach (Node closedNode in search.Closed.Values)
                     CircleAtPoint(graphics, new PointF(closedNode.X*scalar, closedNode.Y*scalar), 2, Color.DimGray);

@@ -8,5 +8,6 @@ namespace CapitalStaging
         bool InBounds(Node proposedNode);
         int Width { get; set; }
         int Height { get; set; }
+        bool Collided(int x, int y);
     }
 }
