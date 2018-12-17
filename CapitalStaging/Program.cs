@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO;
 
 namespace CapitalStaging
 {
@@ -14,42 +15,39 @@ namespace CapitalStaging
     {
         static void Main(string[] args)
         {
+            int i = 1;
+            short width = 128;
+            short height = 128;
+
+            if (!Directory.Exists("Paths"))
+                Directory.CreateDirectory("Paths");
+
             var timer = new Stopwatch();
 
             var times = new List<long>();
             var stepTimes = new List<double>();
 
-            int i = 1;
-            short width = 100;
-            short height = 100;
-            int runs = 100;
-
             var grid = new Grid(width, height);
 
-            var rnd = new Random();
-
-            for (int x = 0; x < runs; x++)
+            for (int x = 0; x < width; x++)
             {
                 timer.Start();
 
-                Node start = new Node((short)(rnd.Next(1, width)), (short)(rnd.Next(1, height)));
+                Node start = grid[x, 0];
 
-                if (grid.Collided(start.X, start.Y))
+                if (grid.Collided(start.Location))
                 {
-                    x--;
+                    //x--;
                     continue;
                 }
 
-                Node goal = new Node((short)(rnd.Next(1, width)), (short)(rnd.Next(1, height)));
+                Node goal = grid[(width-1)-x, height-1];
 
-                if (grid.Collided(goal.X, goal.Y))
+                if (grid.Collided(goal.Location))
                 {
-                    x--;
+                    //x--;
                     continue;
                 }
-
-                //Node start = new Node(10, 10);
-                //Node goal = new Node(90, 90);
 
                 var search = new AStarSearch(grid);
 
@@ -68,7 +66,7 @@ namespace CapitalStaging
                 Console.SetCursorPosition(0, 0);
                 Console.WriteLine("Start: {0} Goal: {1}", start, goal);
                 Console.SetCursorPosition(0, 1);
-                Console.WriteLine("Step: {0:0000} - {1:000.00000000}ms - {2:p}", path.Count, timer.ElapsedMilliseconds, (double)(i++) / runs);
+                Console.WriteLine("Step: {0:0000} - {1:000.00000000}ms - {2:p}", path.Count, timer.ElapsedMilliseconds, (double)(i++) / width);
                 Console.SetCursorPosition(0, 2);
                 Console.WriteLine("Elapsed: Avg: {0:000}ms Min: {1:000}ms Max: {2:000}ms StepAvg:{3:0.000000}ms", times.Average(), times.Min(), times.Max(), stepTimes.Average());
                 timer.Reset();
@@ -90,14 +88,16 @@ namespace CapitalStaging
                     graphics.FillRectangle(new SolidBrush(Color.White), rectangle.X*scalar, rectangle.Y*scalar, rectangle.Width*scalar, rectangle.Height*scalar);
 
                 foreach (Node closedNode in search.Closed.Values)
-                    CircleAtPoint(graphics, new PointF(closedNode.X*scalar, closedNode.Y*scalar), 2, Color.DimGray);
+                    CircleAtPoint(graphics, new PointF(closedNode.Location.X*scalar, closedNode.Location.Y*scalar), 2, Color.DimGray);
 
-                graphics.DrawLines(new Pen(new SolidBrush(Color.Cornsilk)), path.Select(n => new PointF(n.X*scalar, n.Y*scalar)).ToArray());
+                graphics.DrawLines(new Pen(new SolidBrush(Color.Cornsilk)), path.Select(n => new PointF(n.Location.X*scalar, n.Location.Y*scalar)).ToArray());
 
-                CircleAtPoint(graphics, new PointF(start.X*scalar, start.Y*scalar), 2, Color.Red);
-                CircleAtPoint(graphics, new PointF(goal.X*scalar, goal.Y*scalar), 2, Color.Green);
-               
-                image.Save(string.Format("Paths\\{0}_{1}-{2}_{3}.png", start.X, start.Y, goal.X, goal.Y), ImageFormat.Png);
+                CircleAtPoint(graphics, new PointF(start.Location.X*scalar, start.Location.Y*scalar), 2, Color.Red);
+                CircleAtPoint(graphics, new PointF(goal.Location.X*scalar, goal.Location.Y*scalar), 2, Color.Green);
+
+                
+
+                image.Save(string.Format("Paths\\{0}_{1}-{2}_{3}.png", start.Location.X, start.Location.Y, goal.Location.X, goal.Location.Y), ImageFormat.Png);
             }
         }
 

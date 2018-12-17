@@ -1,13 +1,12 @@
 namespace CapitalStaging
 {
-    public struct ProposedStep
+    public class ProposedStep
     {
-        public Node Node;
-        public StepDirection Direction;
+        public Node Node { get; set; }
+        public StepDirection Direction { get; private set; }
 
-        public ProposedStep(Node node, StepDirection direction)
+        public ProposedStep(StepDirection direction)
         {
-            Node = node;
             Direction = direction;
         }
     }
@@ -17,6 +16,7 @@ namespace CapitalStaging
         public readonly int X;
         public readonly int Y;
         public readonly double Cost;
+        
 
         public StepDirection(int x, int y, double cost)
         {

@@ -10,27 +10,41 @@ namespace CapitalStaging
         { }
     }
 
+    public static class PathingConstants
+    {
+        public static readonly StepDirection[] Directions = new[]
+        {
+            // Cardinal
+            new StepDirection(-1, 0, 1), // W
+            new StepDirection(1, 0, 1), // E
+            new StepDirection(0, 1, 1), // N 
+            new StepDirection(0, -1, 1), // S
+            // Diagonal
+            new StepDirection(-1, -1, 1.4142135623730950488016887242097), // NW
+            new StepDirection(-1, 1, 1.4142135623730950488016887242097), // SW
+            new StepDirection(1, -1, 1.4142135623730950488016887242097), // NE
+            new StepDirection(1, 1, 1.4142135623730950488016887242097), // SE
+        };
+    }
+
     public class AStarSearch
     {
         public NodePriorityQueue Open { get; set; }
-        public IDictionary<ulong, Node> Closed { get; set; }
-        public Dictionary<Node, Node> Parent { get; set; }
-        public IDictionary<ulong, double> FHistory { get; set; }
-        public IDictionary<ulong, double> GHistory { get; set; }
+        public IDictionary<int, Node> Closed { get; set; }
+        public Dictionary<int, Node> Parent { get; set; }
+        public IDictionary<int, double> FHistory { get; set; }
+        public IDictionary<int, double> GHistory { get; set; }
         public IGrid Grid { get; set; }
 
-        public bool UseLineOfSight;
-
-        public AStarSearch(IGrid grid, bool lineOfSight = false)
+        public AStarSearch(IGrid grid)
         {
             Grid = grid;
-            UseLineOfSight = lineOfSight;
 
             Open = new NodePriorityQueue(Grid.Width * Grid.Height);
-            Closed = new Dictionary<ulong, Node>();
-            Parent = new Dictionary<Node, Node>();
-            FHistory = new Dictionary<ulong, double>();
-            GHistory = new Dictionary<ulong, double>();
+            Closed = new Dictionary<int, Node>(Grid.Width * Grid.Height);
+            Parent = new Dictionary<int, Node>(Grid.Width * Grid.Height);
+            FHistory = new Dictionary<int, double>(Grid.Width * Grid.Height);
+            GHistory = new Dictionary<int, double>(Grid.Width * Grid.Height);
         }
 
         public Node Start { get; set; }
@@ -38,7 +52,11 @@ namespace CapitalStaging
 
         public double Heuristic(Node node)
         {
-            return Math.Sqrt(Math.Pow(node.X - Goal.X, 2) + Math.Pow(node.Y - Goal.Y, 2));
+            var dx = Math.Abs(node.Location.X - Goal.Location.X) * 1.25;
+            var dy = Math.Abs(node.Location.Y - Goal.Location.Y) * 1.25;
+
+            // Multiply by 2 reduces accuracy, improves performance by about 2
+            return (1 * (dx + dy) + (1.4142135623730950488016887242097 - 2 * 1) * Math.Min(dx, dy));
         }
 
         public IList<Node> Find(Node start, Node goal)
@@ -46,61 +64,61 @@ namespace CapitalStaging
             Start = start;
             Goal = goal;
 
-            Parent.Add(start, start);
+            Parent.Add(start.Location.Id, start);
             Open.Enqueue(Start, Heuristic(Start));
 
             while (Open.Count > 0)
             {
                 Node node = Open.Dequeue();
 
-                if (node.Id == Goal.Id)
+                if (node.Location.Id == Goal.Location.Id)
                     return BuildPath();
 
-                AddUpdate(Closed, node.Id, node);
+                Closed.AddUpdate(node.Location.Id, node);
 
-                foreach (ProposedStep step in Grid.Neighbours(node))
+                for (int i = 0; i < PathingConstants.Directions.Length; i++)
                 {
-                    Node neighour = step.Node;
+                    var direction = PathingConstants.Directions[i];
 
-                    if (!Closed.ContainsKey(neighour.Id))
+                    var proposed = new Vector2Int(
+                        node.Location.X + direction.X,
+                        node.Location.Y + direction.Y
+                    );
+                    
+                    if (!Grid.InBounds(proposed))
+                        continue;
+
+                    var neighbour = Grid[proposed.X, proposed.Y];
+
+                    if (neighbour.Blocked)
+                        continue;
+
+                    if (!Closed.ContainsKey(neighbour.Location.Id))
                     {
-                        if (!Open.Contains(neighour))
+                        if (!Open.Contains(neighbour))
                         {
-                            AddUpdate(GHistory, neighour.Id, double.PositiveInfinity);
-                            TryRemove(Parent, neighour);
+                            GHistory.AddUpdate(neighbour.Location.Id, double.PositiveInfinity);
+                            Parent.TryRemove(neighbour.Location.Id);
                         }
 
-                        double gOld = TryGetValue(GHistory, neighour.Id);
+                        double gOld = GHistory.TryGetValue(neighbour.Location.Id);
 
                         // Compute Cost
-
-                        if (UseLineOfSight && LineOfSight(TryGetValue(Parent, node), neighour))
+                        double g = GHistory.TryGetValue(node.Location.Id);
+                        if (g + direction.Cost < gOld)
                         {
-                            var sParent = TryGetValue(Parent, node);
-                            var sParentCost = Cost(sParent, neighour);
-                            if (TryGetValue(GHistory, sParent.Id) + sParentCost < TryGetValue(GHistory, neighour.Id))
-                            {
-                                AddUpdate(Parent, neighour, sParent);
-                                AddUpdate(GHistory, neighour.Id, TryGetValue(GHistory, node.Id) + sParentCost);
-                            }
-                        }
-                        else
-                        {
-                            if (TryGetValue(GHistory, node.Id) + step.Direction.Cost < TryGetValue(GHistory, neighour.Id))
-                            {
-                                AddUpdate(Parent, neighour, node);
-                                AddUpdate(GHistory, neighour.Id, TryGetValue(GHistory, node.Id) + step.Direction.Cost);
-                            }
+                            Parent.AddUpdate(neighbour.Location.Id, node);
+                            GHistory.AddUpdate(neighbour.Location.Id, g + direction.Cost);
                         }
 
                         // Compute Cost End
-
-                        if (TryGetValue(GHistory, neighour.Id) < gOld)
+                        double gNew = GHistory.TryGetValue(neighbour.Location.Id);
+                        if (gNew < gOld)
                         {
-                            if (Open.Contains(neighour))
-                                Open.Remove(neighour);
-
-                            Open.Enqueue(neighour, TryGetValue(GHistory, neighour.Id) + Heuristic(neighour));
+                            if (Open.Contains(neighbour))
+                                Open.UpdatePriority(neighbour, gNew + Heuristic(neighbour));
+                            else
+                                Open.Enqueue(neighbour, gNew + Heuristic(neighbour));
                         }
                     }
                 }
@@ -109,109 +127,15 @@ namespace CapitalStaging
             return new List<Node>();
         }
 
-        private double Cost(Node a, Node b)
-        {
-            if (a.X == b.X || a.Y == b.Y)
-                return 1d;
-            if (a.X != b.X && a.Y != b.Y)
-                return 1.4142135623730950488016887242097d;
-            return 0d;
-        }
+       
 
-        private bool LineOfSight(Node node, Node neighour)
-        {
-            int x0 = node.X;
-            int y0 = node.Y;
-            int x1 = neighour.X;
-            int y1 = neighour.Y;
-            int dy = y1 - y0;
-            int dx = x1 - x0;
-
-            int sy;
-            int sx;
-            int f = 0;
-
-            if (dy < 0)
-            {
-                dy = -dy;
-                sy = -1;
-            }
-            else
-            {
-                sy = 1;
-            }
-
-            if (dx < 0)
-            {
-                dx = -dx;
-                sx = -1;
-            }
-            else
-            {
-                sx = 1;
-            }
-
-            if (dx >= dy)
-            {
-                while (x0 != x1)
-                {
-                    f += dy;
-                    if (f >= dx)
-                    {
-                        if (Grid.Collided(x0 + (sx - 1) / 2, y0 + (sy - 1) / 2))
-                            return false;
-                        y0 += sy;
-                        f -= dx;
-                    }
-                    if (f != 0 && Grid.Collided(x0 + (sx - 1) / 2, y0 + (sy - 1) / 2))
-                        return false;
-                    if (dy == 0 && Grid.Collided(x0 + (sx - 1) / 2, y0) && Grid.Collided(x0 + (sx - 1) / 2, y0 - 1))
-                        return false;
-                    x0 += sx;
-                }
-            }
-            else
-            {
-                while (y0 != y1)
-                {
-                    f += dx;
-                    if (f >= dy)
-                    {
-                        if (Grid.Collided(x0 + (sx - 1) / 2, y0 + (sy - 1) / 2))
-                            return false;
-                        x0 += sx;
-                        f -= dy;
-                    }
-                    if (f != 0 && Grid.Collided(x0 + (sx - 1) / 2, y0 + (sy - 1) / 2))
-                        return false;
-                    if (dx == 0 && Grid.Collided(x0, y0 + (sy - 1) / 2) && Grid.Collided(x0 - 1, y0 + (sy - 1) / 2))
-                        return false;
-                    y0 += sy;
-                }
-            }
-            return true;
-        }
-
-        public void AddUpdate<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
-        {
-            if (!dictionary.ContainsKey(key))
-                dictionary.Add(key, value);
-            else
-                dictionary[key] = value;
-        }
-
-        public void TryRemove<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            if (dictionary.ContainsKey(key))
-                dictionary.Remove(key);
-        }
-
-        public TValue TryGetValue<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            if (dictionary.ContainsKey(key))
-                return dictionary[key];
-            return default(TValue);
-        }
+        //public TValue TryGetValue<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
+        //{
+        //    TValue result;
+        //    if (dictionary.TryGetValue(key, out result))
+        //        return result;
+        //    return default(TValue);
+        //}
 
         public IList<Node> BuildPath()
         {
@@ -220,27 +144,67 @@ namespace CapitalStaging
             path.Push(current);
             do
             {
-                current = Parent.First(n => n.Key.Id == current.Id).Value;
-                path.Push(current);
-            } while (current.Id != Start.Id);
+                path.Push((current = Parent[current.Location.Id]));
+            } while (current.Location.Id != Start.Location.Id);
             return path.ToList();
+        }
+    }
+
+    public static class DictionaryExtensions
+    {
+        public static TValue TryGetValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            TValue result;
+            if (dictionary.TryGetValue(key, out result))
+                return result;
+            return default(TValue);
+        }
+
+        public static void AddUpdate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (!dictionary.ContainsKey(key))
+                dictionary.Add(key, value);
+            else
+                dictionary[key] = value;
+        }
+
+        public static void TryRemove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
+        {
+            dictionary.Remove(key);
         }
     }
 
     public class Node : FastPriorityQueueNode
     {
-        public readonly int X;
-        public readonly int Y;
-
-        public ulong Id;
+        public Vector2Int Location { get; private set; }
+        
+        public bool Blocked { get; set; }
 
         public Node(int x, int y)
+        {
+            Location = new Vector2Int(x, y);
+        }
+
+        public override string ToString()
+        {
+            return string.Format("[{0},{1}]", Location.X, Location.Y);
+        }
+    }
+
+    public struct Vector2Int
+    {
+        public int X;
+        public int Y;
+
+        public int Id;
+
+        public Vector2Int(int x, int y)
         {
             X = x;
             Y = y;
 
-            var sX = (ulong)x << 32;
-            var sY = (ulong)y;
+            var sX = x << 16;
+            var sY = y;
 
             Id = sX | sY;
         }
@@ -249,20 +213,5 @@ namespace CapitalStaging
         {
             return string.Format("[{0},{1}]", X, Y);
         }
-
-        public class IdComparer : EqualityComparer<Node>
-        {
-            public override bool Equals(Node x, Node y)
-            {
-                return x.Id == y.Id;
-            }
-
-            public override int GetHashCode(Node obj)
-            {
-                return obj.Id.GetHashCode();
-            }
-        }
     }
-
-
 }

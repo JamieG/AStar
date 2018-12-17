@@ -4,10 +4,12 @@ namespace CapitalStaging
 
     public interface IGrid
     {
-        IEnumerable<ProposedStep> Neighbours(Node node);
-        bool InBounds(Node proposedNode);
+        ProposedStep[] Neighbours(Node node);
         int Width { get; set; }
         int Height { get; set; }
-        bool Collided(int x, int y);
+        bool InBounds(Vector2Int proposed);
+
+        Node this[int x, int y] { get; }
+        Node this[Vector2Int location] { get; }
     }
 }

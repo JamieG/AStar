@@ -45,7 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AStarSearch.cs" />
-    <Compile Include="CostCalculator.cs" />
     <Compile Include="FastPriorityQueue.cs" />
     <Compile Include="FastPriorityQueueNode.cs" />
     <Compile Include="Grid.cs" />

@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace CapitalStaging
 {
     using System;
@@ -22,13 +24,6 @@ namespace CapitalStaging
         /// <param name="maxNodes">The max nodes ever allowed to be enqueued (going over this will cause undefined behavior)</param>
         public FastPriorityQueue(int maxNodes)
         {
-#if DEBUG
-            if (maxNodes <= 0)
-            {
-                throw new InvalidOperationException("New queue size cannot be smaller than 1");
-            }
-#endif
-
             _numNodes = 0;
             _nodes = new T[maxNodes + 1];
             _numNodesEverEnqueued = 0;
@@ -62,9 +57,7 @@ namespace CapitalStaging
         /// Removes every node from the queue.
         /// O(n) (So, don't do this often!)
         /// </summary>
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         public void Clear()
         {
             Array.Clear(_nodes, 1, _numNodes);
@@ -74,22 +67,9 @@ namespace CapitalStaging
         /// <summary>
         /// Returns (in O(1)!) whether the given node is in the queue.  O(1)
         /// </summary>
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         public bool Contains(T node)
         {
-#if DEBUG
-            if (node == null)
-            {
-                throw new ArgumentNullException("node");
-            }
-            if (node.QueueIndex < 0 || node.QueueIndex >= _nodes.Length)
-            {
-                throw new InvalidOperationException("node.QueueIndex has been corrupted. Did you change it manually? Or add this node to another queue?");
-            }
-#endif
-
             return (_nodes[node.QueueIndex] == node);
         }
 
@@ -99,26 +79,9 @@ namespace CapitalStaging
         /// If the node is already enqueued, the result is undefined.
         /// O(log n)
         /// </summary>
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         public void Enqueue(T node, double priority)
         {
-#if DEBUG
-            if (node == null)
-            {
-                throw new ArgumentNullException("node");
-            }
-            if (_numNodes >= _nodes.Length - 1)
-            {
-                throw new InvalidOperationException("Queue is full - node cannot be added: " + node);
-            }
-            if (Contains(node))
-            {
-                throw new InvalidOperationException("Node is already enqueued: " + node);
-            }
-#endif
-
             node.Priority = priority;
             _numNodes++;
             _nodes[_numNodes] = node;
@@ -127,9 +90,7 @@ namespace CapitalStaging
             CascadeUp(_nodes[_numNodes]);
         }
 
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         private void Swap(T node1, T node2)
         {
             //Swap the nodes
@@ -160,9 +121,7 @@ namespace CapitalStaging
             }
         }
 
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         private void CascadeDown(T node)
         {
             //aka Heapify-down
@@ -224,9 +183,7 @@ namespace CapitalStaging
         /// Returns true if 'higher' has higher priority than 'lower', false otherwise.
         /// Note that calling HasHigherPriority(node, node) (ie. both arguments the same node) will return false
         /// </summary>
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         private bool HasHigherPriority(T higher, T lower)
         {
             return (higher.Priority < lower.Priority ||
@@ -240,19 +197,6 @@ namespace CapitalStaging
         /// </summary>
         public T Dequeue()
         {
-#if DEBUG
-            if (_numNodes <= 0)
-            {
-                throw new InvalidOperationException("Cannot call Dequeue() on an empty queue");
-            }
-
-            if (!IsValidQueue())
-            {
-                throw new InvalidOperationException("Queue has been corrupted (Did you update a node priority manually instead of calling UpdatePriority()?" +
-                                                    "Or add the same node to two different queues?)");
-            }
-#endif
-
             T returnMe = _nodes[1];
             Remove(returnMe);
             return returnMe;
@@ -265,18 +209,6 @@ namespace CapitalStaging
         /// </summary>
         public void Resize(int maxNodes)
         {
-#if DEBUG
-            if (maxNodes <= 0)
-            {
-                throw new InvalidOperationException("Queue size cannot be smaller than 1");
-            }
-
-            if (maxNodes < _numNodes)
-            {
-                throw new InvalidOperationException("Called Resize(" + maxNodes + "), but current queue contains " + _numNodes + " nodes");
-            }
-#endif
-
             T[] newArray = new T[maxNodes + 1];
             int highestIndexToCopy = Math.Min(maxNodes, _numNodes);
             for (int i = 1; i <= highestIndexToCopy; i++)
@@ -295,13 +227,6 @@ namespace CapitalStaging
         {
             get
             {
-#if DEBUG
-                if (_numNodes <= 0)
-                {
-                    throw new InvalidOperationException("Cannot call .First on an empty queue");
-                }
-#endif
-
                 return _nodes[1];
             }
         }
@@ -312,22 +237,9 @@ namespace CapitalStaging
         /// Calling this method on a node not in the queue results in undefined behavior
         /// O(log n)
         /// </summary>
-#if NET_VERSION_4_5
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         public void UpdatePriority(T node, double priority)
         {
-#if DEBUG
-            if (node == null)
-            {
-                throw new ArgumentNullException("node");
-            }
-            if (!Contains(node))
-            {
-                throw new InvalidOperationException("Cannot call UpdatePriority() on a node which is not enqueued: " + node);
-            }
-#endif
-
             node.Priority = priority;
             OnNodeUpdated(node);
         }
@@ -356,17 +268,6 @@ namespace CapitalStaging
         /// </summary>
         public void Remove(T node)
         {
-#if DEBUG
-            if (node == null)
-            {
-                throw new ArgumentNullException("node");
-            }
-            if (!Contains(node))
-            {
-                throw new InvalidOperationException("Cannot call Remove() on a node which is not enqueued: " + node);
-            }
-#endif
-
             //If the node is already the last node, we can remove it immediately
             if (node.QueueIndex == _numNodes)
             {
@@ -394,28 +295,6 @@ namespace CapitalStaging
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        /// <summary>
-        /// <b>Should not be called in production code.</b>
-        /// Checks to make sure the queue is still in a valid state.  Used for testing/debugging the queue.
-        /// </summary>
-        public bool IsValidQueue()
-        {
-            for (int i = 1; i < _nodes.Length; i++)
-            {
-                if (_nodes[i] != null)
-                {
-                    int childLeftIndex = 2 * i;
-                    if (childLeftIndex < _nodes.Length && _nodes[childLeftIndex] != null && HasHigherPriority(_nodes[childLeftIndex], _nodes[i]))
-                        return false;
-
-                    int childRightIndex = childLeftIndex + 1;
-                    if (childRightIndex < _nodes.Length && _nodes[childRightIndex] != null && HasHigherPriority(_nodes[childRightIndex], _nodes[i]))
-                        return false;
-                }
-            }
-            return true;
         }
     }
 }
