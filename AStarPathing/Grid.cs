@@ -1,9 +1,7 @@
-namespace CapitalStaging
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Drawing;
+using System.Drawing;
 
+namespace AStarPathing
+{
     public class Grid : IGrid
     {
         public int Width { get; set; }

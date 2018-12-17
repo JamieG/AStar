@@ -1,4 +1,4 @@
-﻿namespace CapitalStaging
+﻿namespace AStarPathing
 {
     public class FastPriorityQueueNode
     {

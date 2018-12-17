@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 
-namespace CapitalStaging
+namespace AStarPathing
 {
-    using System.Drawing;
-    using System.Drawing.Imaging;
-
     class Program
     {
         static void Main(string[] args)

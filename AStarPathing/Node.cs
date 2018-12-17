@@ -1,8 +1,5 @@
-namespace CapitalStaging
+namespace AStarPathing
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-
     //public struct Node : IEquatable<Node>, IComparable<Node>
     //{
     //    public override bool Equals(object obj)

@@ -7,8 +7,8 @@
     <ProjectGuid>{E54CF4F2-71BA-41A3-82BA-83867CB6BAE1}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CapitalStaging</RootNamespace>
-    <AssemblyName>CapitalStaging</AssemblyName>
+    <RootNamespace>AStarPathing</RootNamespace>
+    <AssemblyName>AStarPathing</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -45,16 +45,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AStarSearch.cs" />
+    <Compile Include="DictionaryExtensions.cs" />
     <Compile Include="FastPriorityQueue.cs" />
     <Compile Include="FastPriorityQueueNode.cs" />
     <Compile Include="Grid.cs" />
     <Compile Include="IGrid.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="IPriorityQueue.cs" />
+    <Compile Include="NodePriorityQueue.cs" />
+    <Compile Include="PathingConstants.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProposedStep.cs" />
     <Compile Include="StepModifier.cs" />
+    <Compile Include="Vector2Int.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

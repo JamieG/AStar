@@ -1,7 +1,7 @@
-namespace CapitalStaging
-{
-    using System;
+using System;
 
+namespace AStarPathing
+{
     [Flags]
     public enum StepModifier
     {
