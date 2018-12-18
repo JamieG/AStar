@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace AStarPathing
 {
@@ -24,38 +24,35 @@ namespace AStarPathing
             GHistory = new Dictionary<int, double>(Grid.Width * Grid.Height);
         }
 
-        public Node Start { get; set; }
-        public Node Goal { get; set; }
-
-        public double Heuristic(Node node)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private double Heuristic(Node node, Node goal)
         {
-            var dX = Math.Abs(node.Location.X - Goal.Location.X) * PathingConstants.HeuristicBias;
-            var dY = Math.Abs(node.Location.Y - Goal.Location.Y) * PathingConstants.HeuristicBias;
-            
+            var dX = Math.Abs(node.Location.X - goal.Location.X) * PathingConstants.HeuristicBias;
+            var dY = Math.Abs(node.Location.Y - goal.Location.Y) * PathingConstants.HeuristicBias;
+
             // Octile distance
             return PathingConstants.CardinalCost * (dX + dY)
                    + (PathingConstants.DiagonalCost - 2 * PathingConstants.CardinalCost)
                    * Math.Min(dX, dY);
         }
 
-        public IList<Node> Find(Node start, Node goal)
+        public Node[] Find(Node start, Node goal)
         {
-            Start = start;
-            Goal = goal;
-
             Parent.Add(start.Location.Id, start);
-            Open.Enqueue(Start, Heuristic(Start));
+            Open.Enqueue(start, Heuristic(start, goal));
 
             while (Open.Count > 0)
             {
-                Node node = Open.Dequeue();
+                var node = Open.Dequeue();
 
-                if (node.Location.Id == Goal.Location.Id)
-                    return BuildPath();
+                if (node.Location.Id == goal.Location.Id)
+                    return BuildPath(start, goal);
 
                 Closed.AddUpdate(node.Location.Id, node);
 
-                for (int i = 0; i < PathingConstants.Directions.Length; i++)
+                bool cBlock = false;
+
+                for (var i = 0; i < PathingConstants.Directions.Length; i++)
                 {
                     var direction = PathingConstants.Directions[i];
 
@@ -63,15 +60,23 @@ namespace AStarPathing
                         node.Location.X + direction.X,
                         node.Location.Y + direction.Y
                     );
-                    
+
                     if (!Grid.InBounds(proposed))
                         continue;
 
-                    var neighbour = Grid[proposed.X, proposed.Y];
+                    Node neighbour = Grid[proposed.X, proposed.Y];
 
                     if (neighbour.Blocked)
+                    {
+                        if (i < 4)
+                            cBlock = true;
                         continue;
+                    }
 
+                    // Prevent slipping between blocked cardinals by an open diagonal
+                    if (i >= 4 && cBlock)
+                        continue;
+                    
                     if (!Closed.ContainsKey(neighbour.Location.Id))
                     {
                         if (!Open.Contains(neighbour))
@@ -80,10 +85,10 @@ namespace AStarPathing
                             Parent.TryRemove(neighbour.Location.Id);
                         }
 
-                        double gOld = GHistory.TryGetValue(neighbour.Location.Id);
+                        var gOld = GHistory.TryGetValue(neighbour.Location.Id);
 
                         // Compute Cost
-                        double g = GHistory.TryGetValue(node.Location.Id);
+                        var g = GHistory.TryGetValue(node.Location.Id);
                         if (g + direction.Cost < gOld)
                         {
                             Parent.AddUpdate(neighbour.Location.Id, node);
@@ -91,58 +96,29 @@ namespace AStarPathing
                         }
 
                         // Compute Cost End
-                        double gNew = GHistory.TryGetValue(neighbour.Location.Id);
+                        var gNew = GHistory.TryGetValue(neighbour.Location.Id);
                         if (gNew < gOld)
                         {
+                            var priority = gNew + Heuristic(neighbour, goal);
                             if (Open.Contains(neighbour))
-                                Open.UpdatePriority(neighbour, gNew + Heuristic(neighbour));
+                                Open.UpdatePriority(neighbour, priority);
                             else
-                                Open.Enqueue(neighbour, gNew + Heuristic(neighbour));
+                                Open.Enqueue(neighbour, priority);
                         }
                     }
                 }
             }
 
-            return new List<Node>();
+            return new Node[0];
         }
 
-       
-
-        //public TValue TryGetValue<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key)
-        //{
-        //    TValue result;
-        //    if (dictionary.TryGetValue(key, out result))
-        //        return result;
-        //    return default(TValue);
-        //}
-
-        public IList<Node> BuildPath()
+        public Node[] BuildPath(Node start, Node goal)
         {
-            Node current = Goal;
-            var path = new Stack<Node>();
-            path.Push(current);
-            do
-            {
-                path.Push((current = Parent[current.Location.Id]));
-            } while (current.Location.Id != Start.Location.Id);
-            return path.ToList();
-        }
-    }
-
-    public class Node : FastPriorityQueueNode
-    {
-        public Vector2Int Location { get; private set; }
-        
-        public bool Blocked { get; set; }
-
-        public Node(int x, int y)
-        {
-            Location = new Vector2Int(x, y);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("[{0},{1}]", Location.X, Location.Y);
+            var current = goal;
+            var path = new Stack<Node>(new[] {current});
+            while (current.Location.Id != start.Location.Id)
+                path.Push(current = Parent[current.Location.Id]);
+            return path.ToArray();
         }
     }
 }

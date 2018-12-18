@@ -16,7 +16,7 @@ namespace AStarPathing
         public readonly int X;
         public readonly int Y;
         public readonly double Cost;
-        
+
 
         public StepDirection(int x, int y, double cost)
         {
