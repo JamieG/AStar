@@ -80,7 +80,6 @@ namespace AStar
                     if (i >= 4 && cBlock)
                         continue;
 
-                    //if (!Closed[neighbour.Id])
                     if (!Data[neighbour.Id].Closed)
                     {
                         if (!_open.Contains(neighbour))
@@ -89,7 +88,6 @@ namespace AStar
                             Data[neighbour.Id].Parent = null;
                         }
 
-                        //var gOld = _g[neighbour.Id];
                         var gOld = Data[neighbour.Id].G;
 
                         // Compute Cost
