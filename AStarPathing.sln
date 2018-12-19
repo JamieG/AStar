@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AStarPathing", "AStarPathing\AStarPathing.csproj", "{E54CF4F2-71BA-41A3-82BA-83867CB6BAE1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AStar", "AStar\AStar.csproj", "{ECB94BC8-D67A-47A9-9FFB-911630DD2B8A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{E54CF4F2-71BA-41A3-82BA-83867CB6BAE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E54CF4F2-71BA-41A3-82BA-83867CB6BAE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E54CF4F2-71BA-41A3-82BA-83867CB6BAE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECB94BC8-D67A-47A9-9FFB-911630DD2B8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECB94BC8-D67A-47A9-9FFB-911630DD2B8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECB94BC8-D67A-47A9-9FFB-911630DD2B8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECB94BC8-D67A-47A9-9FFB-911630DD2B8A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

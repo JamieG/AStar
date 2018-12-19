@@ -1,15 +1,15 @@
 using System;
 
-namespace AStarPathing
+namespace AStar
 {
     public static class PathingConstants
     {
         // Octal distance costs
-        public static double CardinalCost = 1f;
-        public static double DiagonalCost = Math.Sqrt(2);
+        public static float CardinalCost = 1f;
+        public static float DiagonalCost = (float) Math.Sqrt(2);
 
         // Bias > 1 will vastly increase performance at the cost of accuracy.
-        public static double HeuristicBias = 1f;
+        public static float HeuristicBias = 1f;
 
         public static readonly StepDirection[] Directions =
         {
@@ -22,7 +22,7 @@ namespace AStarPathing
             new StepDirection(-1, -1, DiagonalCost), // NW
             new StepDirection(-1, +1, DiagonalCost), // SW
             new StepDirection(+1, -1, DiagonalCost), // NE
-            new StepDirection(+1, +1, DiagonalCost) // SE
+            new StepDirection(+1, +1, DiagonalCost)  // SE
         };
     }
 }

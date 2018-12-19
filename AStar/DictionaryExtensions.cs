@@ -1,17 +1,9 @@
 using System.Collections.Generic;
 
-namespace AStarPathing
+namespace AStar
 {
     public static class DictionaryExtensions
     {
-        public static TValue TryGetValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            TValue result;
-            if (dictionary.TryGetValue(key, out result))
-                return result;
-            return default(TValue);
-        }
-
         public static void AddUpdate<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
         {
             if (!dictionary.ContainsKey(key))
