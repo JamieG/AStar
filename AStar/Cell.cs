@@ -1,24 +1,22 @@
-namespace AStar
-{
+namespace AStar {
+
     public class Cell {
-
-        public int QueueIndex;
-
-        public Vector2Int Location;
         public bool Blocked;
+        public bool Closed;
+        public double F;
 
         public double G;
         public double H;
-        public double F;
+
+        public Vector2Int Location;
 
         public Cell Parent;
-        public bool Closed;
 
-        public Cell(Vector2Int location)
-        {
-            Location = location;
-        }
+        public int QueueIndex;
+
+        public Cell(Vector2Int location) => Location = location;
 
         public override string ToString() => $"[{Location.X},{Location.Y}]";
     }
+
 }

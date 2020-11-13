@@ -1,28 +1,22 @@
 using System;
 
-namespace AStar
-{
-    public static class PathingConstants
-    {
-        // Octal distance costs
-        public static float CardinalCost = 1f;
-        public static float DiagonalCost = (float) Math.Sqrt(2);
+namespace AStar {
 
-        // Bias > 1 will vastly increase performance at the cost of accuracy.
-        public static float HeuristicBias = 1f;
+    public static class PathingConstants {
 
-        public static readonly StepDirection[] Directions =
-        {
+        public static readonly StepDirection[] Directions = {
+
             // Cardinal
-            new StepDirection(-1, +0, CardinalCost), // W
-            new StepDirection(+1, +0, CardinalCost), // E
-            new StepDirection(+0, +1, CardinalCost), // N 
-            new StepDirection(+0, -1, CardinalCost), // S
+            new StepDirection(-1, +0), // W
+            new StepDirection(+1, +0), // E
+            new StepDirection(+0, +1), // N 
+            new StepDirection(+0, -1), // S
             // Diagonal
-            new StepDirection(-1, -1, DiagonalCost), // NW
-            new StepDirection(-1, +1, DiagonalCost), // SW
-            new StepDirection(+1, -1, DiagonalCost), // NE
-            new StepDirection(+1, +1, DiagonalCost)  // SE
+            new StepDirection(-1, -1), // NW
+            new StepDirection(-1, +1), // SW
+            new StepDirection(+1, -1), // NE
+            new StepDirection(+1, +1)  // SE
         };
     }
+
 }

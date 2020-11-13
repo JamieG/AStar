@@ -7,12 +7,11 @@ using System.IO;
 using System.Linq;
 using AStar;
 
-namespace AStarPathing
-{
-    internal class Program
-    {
-        private static void Main(string[] args)
-        {
+namespace AStarPathing {
+
+    internal class Program {
+        private static void Main(string[] args) {
+
             var runs = 100;
 
             var image = (Bitmap) Image.FromFile("cavern.gif");
@@ -32,10 +31,9 @@ namespace AStarPathing
 
             var search = new AStarSearch(grid);
 
-            for (var runIndex = 0; runIndex < runs; runIndex++)
-            {
+            for (var runIndex = 0; runIndex < runs; runIndex++) {
                 var start = new Vector2Int(10, 10);
-                var goal = new Vector2Int (width - 10, height - 10);
+                var goal = new Vector2Int(width - 10, height - 10);
 
                 for (var x = 0; x < width; x++)
                 for (var y = 0; y < height; y++) {
@@ -71,8 +69,7 @@ namespace AStarPathing
         }
 
         private static void RenderPath(int width, int height, Vector2Int start, Vector2Int goal, IList<Cell> path,
-            AStarSearch search, IGridProvider grid, int runIndex, TimeSpan elapsed)
-        {
+            AStarSearch search, IGridProvider grid, int runIndex, TimeSpan elapsed) {
             var scalar = 10;
 
             var verdana = new FontFamily("Verdana");
@@ -115,10 +112,10 @@ namespace AStarPathing
             }
         }
 
-        private static void CircleAtPoint(Graphics graphics, PointF center, float radius, Color color)
-        {
+        private static void CircleAtPoint(Graphics graphics, PointF center, float radius, Color color) {
             var shifted = new RectangleF(center.X - radius, center.Y - radius, radius * 2, radius * 2);
             graphics.FillEllipse(new SolidBrush(color), shifted);
         }
     }
+
 }

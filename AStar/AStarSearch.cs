@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Xml;
 
 namespace AStar {
 
@@ -22,8 +20,8 @@ namespace AStar {
             var dY = Math.Abs(cell.Location.Y - goal.Location.Y);
 
             // Octile distance
-            return 1 * (dX + dY) 
-                   + (Math.Sqrt(2) - 2 * 1) 
+            return 1 * (dX + dY)
+                   + (Math.Sqrt(2) - 2 * 1)
                    * Math.Min(dX, dY);
         }
 
@@ -39,7 +37,7 @@ namespace AStar {
 
             Cell startCell = _grid[start];
             Cell goalCell = _grid[goal];
-            
+
             _open.Enqueue(startCell, 0);
 
             var bounds = _grid.Size;
@@ -56,9 +54,7 @@ namespace AStar {
 
                 var g = node.G + 1;
 
-                if (goalCell.Location == node.Location) {
-                    break;
-                }
+                if (goalCell.Location == node.Location) break;
 
                 Vector2Int proposed = new Vector2Int(0, 0);
 
@@ -78,22 +74,15 @@ namespace AStar {
 
                     if (neighbour.Blocked) {
 
-                        if (i < 4) {
-                            cBlock = true;
-                        }
+                        if (i < 4) cBlock = true;
 
                         continue;
                     }
 
                     // Prevent slipping between blocked cardinals by an open diagonal
-                    if (i >= 4 && cBlock) {
-                        continue;
-                    }
+                    if (i >= 4 && cBlock) continue;
 
-                    if (_grid[neighbour.Location].Closed) {
-
-                        continue;
-                    }
+                    if (_grid[neighbour.Location].Closed) continue;
 
                     if (!_open.Contains(neighbour)) {
 
