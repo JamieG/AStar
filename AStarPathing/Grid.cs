@@ -39,7 +39,7 @@ namespace AStarPathing
                         cell.H = 0;
                         cell.F = 0;
                         cell.Closed = false;
-
+                        cell.Parent = null;
                     }
                 }
             }

@@ -13,7 +13,7 @@ namespace AStarPathing
     {
         private static void Main(string[] args)
         {
-            var runs = 4;
+            var runs = 100;
 
             var image = (Bitmap) Image.FromFile("cavern.gif");
 
@@ -30,12 +30,12 @@ namespace AStarPathing
             var times = new List<long>();
             var stepTimes = new List<double>();
 
+            var search = new AStarSearch(grid);
+
             for (var runIndex = 0; runIndex < runs; runIndex++)
             {
-                grid.Reset();
-
-                var start = grid[10, 10];
-                var goal = grid[width - 10, height - 10];
+                var start = new Vector2Int(10, 10);
+                var goal = new Vector2Int (width - 10, height - 10);
 
                 for (var x = 0; x < width; x++)
                 for (var y = 0; y < height; y++) {
@@ -44,13 +44,10 @@ namespace AStarPathing
 
                 timer.Start();
 
-                var search = new AStarSearch();
-                search.Initialise(grid);
-
                 var path = search.Find(start, goal);
                 timer.Stop();
 
-                if (!path.Any() || !path.Last().Equals(goal) || !path.First().Equals(start))
+                if (!path.Any() || !path.Last().Location.Equals(goal) || !path.First().Location.Equals(start))
                     throw new Exception("Failure");
 
                 RenderPath(width, height, start, goal, path, search, grid, runIndex, timer.Elapsed);
@@ -73,7 +70,7 @@ namespace AStarPathing
             Console.ReadKey();
         }
 
-        private static void RenderPath(int width, int height, Cell start, Cell goal, IList<Cell> path,
+        private static void RenderPath(int width, int height, Vector2Int start, Vector2Int goal, IList<Cell> path,
             AStarSearch search, IGridProvider grid, int runIndex, TimeSpan elapsed)
         {
             var scalar = 10;
@@ -81,45 +78,47 @@ namespace AStarPathing
             var verdana = new FontFamily("Verdana");
             var statsFont = new Font(verdana, 36, FontStyle.Bold, GraphicsUnit.Pixel);
 
-            using (var image = new Bitmap(width * scalar, height * scalar, PixelFormat.Format32bppArgb))
-            using (var graphics = Graphics.FromImage(image))
-            {
-                graphics.Clear(Color.White);
+            using (var image = new Bitmap(width * scalar, height * scalar, PixelFormat.Format32bppArgb)) {
+                using (var graphics = Graphics.FromImage(image)) {
+                    graphics.Clear(Color.White);
 
-                int closedCount = 0;
+                    int closedCount = 0;
 
-                for (var x = 0; x < width; x++)
-                for (var y = 0; y < height; y++)
-                    if (grid[new Vector2Int(x, y)].Blocked)
-                        graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), x * scalar - scalar / 2,
-                            y * scalar - scalar / 2, scalar, scalar);
-                    else if (grid[new Vector2Int(x, y)].Closed) {
-                        closedCount++;
-                        CircleAtPoint(graphics,
-                            new PointF(x * scalar, y * scalar), 2,
-                            Color.Gainsboro);
+                    for (var x = 0; x < width; x++) {
+                        for (var y = 0; y < height; y++) {
+                            if (grid[new Vector2Int(x, y)].Blocked) {
+                                graphics.FillRectangle(new SolidBrush(Color.DarkGray), x * scalar - scalar / 2,
+                                    y * scalar - scalar / 2, scalar, scalar);
+                            } else if (grid[new Vector2Int(x, y)].Closed) {
+                                closedCount++;
+                                CircleAtPoint(graphics,
+                                    new PointF(x * scalar, y * scalar), 4,
+                                    Color.IndianRed);
+                            }
+                        }
                     }
 
-                graphics.DrawLines(new Pen(new SolidBrush(Color.LawnGreen), 2),
-                    path.Select(n => new PointF(n.Location.X * scalar, n.Location.Y * scalar)).ToArray());
+                    graphics.DrawLines(new Pen(new SolidBrush(Color.LimeGreen), 8),
+                        path.Select(n => new PointF(n.Location.X * scalar, n.Location.Y * scalar)).ToArray());
 
-                CircleAtPoint(graphics, new PointF(start.Location.X * scalar, start.Location.Y * scalar), 2, Color.Red);
-                CircleAtPoint(graphics, new PointF(goal.Location.X * scalar, goal.Location.Y * scalar), 2, Color.Green);
+                    CircleAtPoint(graphics, new PointF(start.X * scalar, start.Y * scalar), 5, Color.Red);
+                    CircleAtPoint(graphics, new PointF(goal.X * scalar, goal.Y * scalar), 5, Color.Green);
 
-                graphics.DrawString(
-                    $"Elapsed: {elapsed.TotalMilliseconds:000}ms Closed: {closedCount:00000}",
-                    statsFont, new SolidBrush(Color.Black), 2, height * scalar - (statsFont.GetHeight(graphics) + 2));
+                    graphics.DrawString(
+                        $"Elapsed: {elapsed.TotalMilliseconds:000}ms Closed: {closedCount:00000}",
+                        statsFont, new SolidBrush(Color.Black), 2, height * scalar - (statsFont.GetHeight(graphics) + 2));
 
-                image.Save(
-                    $"Paths\\{start.Location.X}_{start.Location.Y}-{goal.Location.X}_{goal.Location.Y}_{runIndex}.png",
-                    ImageFormat.Png);
+                    image.Save(
+                        $"Paths\\{start.X}_{start.Y}-{goal.X}_{goal.Y}_{runIndex}.png",
+                        ImageFormat.Png);
+                }
             }
         }
 
         private static void CircleAtPoint(Graphics graphics, PointF center, float radius, Color color)
         {
             var shifted = new RectangleF(center.X - radius, center.Y - radius, radius * 2, radius * 2);
-            graphics.DrawEllipse(new Pen(new SolidBrush(color)), shifted);
+            graphics.FillEllipse(new SolidBrush(color), shifted);
         }
     }
 }
