@@ -1,9 +1,8 @@
 namespace AStar
 {
-    public interface IGrid
+    public interface IGridProvider
     {
-        int Width { get; set; }
-        int Height { get; set; }
-        Cell this[int x, int y] { get; }
+        Vector2Int Size { get; }
+        Cell this[Vector2Int position] { get; }
     }
 }

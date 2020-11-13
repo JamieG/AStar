@@ -1,6 +1,6 @@
 namespace AStar
 {
-    public struct StepDirection
+    public readonly struct StepDirection
     {
         public readonly int X;
         public readonly int Y;

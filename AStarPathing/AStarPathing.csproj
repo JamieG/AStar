@@ -57,6 +57,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="cavern.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="grid.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

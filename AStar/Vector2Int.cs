@@ -12,5 +12,14 @@ namespace AStar
         }
 
         public override string ToString() => $"[{X},{Y}]";
+
+        public static bool operator ==(Vector2Int lhs, Vector2Int rhs) {
+            return lhs.X == rhs.X && lhs.Y == rhs.Y;
+        }
+
+        public static bool operator !=(Vector2Int lhs, Vector2Int rhs)
+        {
+            return lhs.X != rhs.X || lhs.Y != rhs.Y;
+        }
     }
 }

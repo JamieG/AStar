@@ -10,10 +10,9 @@ namespace AStar
     ///     See https://github.com/BlueRaja/High-Speed-Priority-Queue-for-C-Sharp/wiki/Getting-Started for more information
     /// </summary>
     /// <typeparam name="T">The values in the queue.  Must extend the FastPriorityQueueNode class</typeparam>
-    public sealed class FastPriorityQueue<T> : IPriorityQueue<T, float>
-        where T : FastPriorityQueueNode
+    public sealed class FastPriorityQueue : IPriorityQueue<Cell, double>
     {
-        private T[] _nodes;
+        private Cell[] _nodes;
 
         /// <summary>
         ///     Returns the maximum number of items that can be enqueued at once in this queue.  Once you hit this number (ie. once
@@ -33,7 +32,7 @@ namespace AStar
         ///     If the queue is empty, behavior is undefined.
         ///     O(1)
         /// </summary>
-        public T First => _nodes[1];
+        public Cell First => _nodes[1];
 
         /// <summary>
         ///     Instantiate a new Priority Queue
@@ -42,7 +41,7 @@ namespace AStar
         public FastPriorityQueue(int maxNodes)
         {
             Count = 0;
-            _nodes = new T[maxNodes + 1];
+            _nodes = new Cell[maxNodes + 1];
         }
 
         /// <summary>
@@ -63,7 +62,7 @@ namespace AStar
         ///     O(1)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Contains(T node) => _nodes[node.QueueIndex] == node;
+        public bool Contains(Cell node) => _nodes[node.QueueIndex] == node;
 
         /// <summary>
         ///     Enqueue a node to the priority queue.  Lower values are placed in front. Ties are broken arbitrarily.
@@ -74,9 +73,9 @@ namespace AStar
         ///     O(log n)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Enqueue(T node, float priority)
+        public void Enqueue(Cell node, double priority)
         {
-            node.Priority = priority;
+            node.F = priority;
             Count++;
             _nodes[Count] = node;
             node.QueueIndex = Count;
@@ -89,7 +88,7 @@ namespace AStar
         ///     O(log n)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T Dequeue()
+        public Cell Dequeue()
         {
             var returnMe = _nodes[1];
             //If the node is already the last node, we can remove it immediately
@@ -119,9 +118,9 @@ namespace AStar
         ///     O(log n)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void UpdatePriority(T node, float priority)
+        public void UpdatePriority(Cell node, double priority)
         {
-            node.Priority = priority;
+            node.F = priority;
             OnNodeUpdated(node);
         }
 
@@ -131,7 +130,7 @@ namespace AStar
         ///     O(log n)
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(T node)
+        public void Remove(Cell node)
         {
             //If the node is already the last node, we can remove it immediately
             if (node.QueueIndex == Count)
@@ -152,16 +151,16 @@ namespace AStar
             OnNodeUpdated(formerLastNode);
         }
 
-        public IEnumerator<T> GetEnumerator()
+        public IEnumerator<Cell> GetEnumerator()
         {
-            IEnumerable<T> e = new ArraySegment<T>(_nodes, 1, Count);
+            IEnumerable<Cell> e = new ArraySegment<Cell>(_nodes, 1, Count);
             return e.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CascadeUp(T node)
+        private void CascadeUp(Cell node)
         {
             //aka Heapify-up
             int parent;
@@ -201,7 +200,7 @@ namespace AStar
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CascadeDown(T node)
+        private void CascadeDown(Cell node)
         {
             //aka Heapify-down
             var finalQueueIndex = node.QueueIndex;
@@ -341,14 +340,14 @@ namespace AStar
         ///     Note that calling HasHigherPriority(node, node) (ie. both arguments the same node) will return false
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HasHigherPriority(T higher, T lower) => higher.Priority < lower.Priority;
+        private bool HasHigherPriority(Cell higher, Cell lower) => higher.F < lower.F;
 
         /// <summary>
         ///     Returns true if 'higher' has higher priority than 'lower', false otherwise.
         ///     Note that calling HasHigherOrEqualPriority(node, node) (ie. both arguments the same node) will return true
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HasHigherOrEqualPriority(T higher, T lower) => higher.Priority <= lower.Priority;
+        private bool HasHigherOrEqualPriority(Cell higher, Cell lower) => higher.F <= lower.F;
 
         /// <summary>
         ///     Resize the queue so it can accept more nodes.  All currently enqueued nodes are remain.
@@ -357,14 +356,14 @@ namespace AStar
         /// </summary>
         public void Resize(int maxNodes)
         {
-            var newArray = new T[maxNodes + 1];
+            var newArray = new Cell[maxNodes + 1];
             var highestIndexToCopy = Math.Min(maxNodes, Count);
             Array.Copy(_nodes, newArray, highestIndexToCopy + 1);
             _nodes = newArray;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void OnNodeUpdated(T node)
+        private void OnNodeUpdated(Cell node)
         {
             //Bubble the updated node up or down as appropriate
             var parentIndex = node.QueueIndex >> 1;
@@ -381,7 +380,7 @@ namespace AStar
         ///     If the node is currently in the queue or belongs to another queue, the result is undefined
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ResetNode(T node)
+        public void ResetNode(Cell node)
         {
             node.QueueIndex = 0;
         }

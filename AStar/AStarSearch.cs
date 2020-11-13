@@ -1,127 +1,155 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Xml;
 
-namespace AStar
-{
-    public struct CellData
-    {
-        public float G;
-        public bool Closed;
-        public Cell Parent;
+namespace AStar {
+
+    public enum SearchStatus {
+        Idle,
+        Searching,
+        PathFound,
+        NoPathFound
     }
 
-    public class AStarSearch
-    {
-        private readonly IGrid _grid;
-        private readonly FastPriorityQueue<Cell> _open;
+    public static class Heuristics {
 
-        public CellData[] Data { get; }
-
-        public AStarSearch(IGrid grid)
-        {
-            _grid = grid;
-            _open = new FastPriorityQueue<Cell>(_grid.Width * _grid.Height);
-            Data = new CellData[_grid.Width * _grid.Height];
+        // implementation for floating-point  Manhattan Distanceastrse
+        public static double ManhattanDistance(double x1, double x2, double y1, double y2) {
+            return Math.Abs(x1 - x2) + Math.Abs(y1 - y2);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private float Heuristic(Cell cell, Cell goal)
-        {
-            var dX = Math.Abs(cell.Location.X - goal.Location.X) * PathingConstants.HeuristicBias;
-            var dY = Math.Abs(cell.Location.Y - goal.Location.Y) * PathingConstants.HeuristicBias;
+        // implementation for floating-point EuclideanDistance
+        public static double EuclideanDistance(Vector2Int a, Vector2Int b) {
+            var dx = Math.Abs(a.X - b.X);
+            var dy = Math.Abs(a.Y - b.Y);
+
+            return 1 * (dx + dy) + (2 - 2 * 1) * Math.Min(dx, dy);
+        }
+
+        // implementation for integer based Chebyshev Distance
+        public static double ChebyshevDistance(double dx, double dy) {
+            // not quite sure if the math is correct here
+            return 1 * (dx + dy) + (1 - 2 * 1) * (dx - dy);
+        }
+    }
+
+    public class AStarSearch {
+        private IGridProvider _grid;
+        private FastPriorityQueue _open;
+
+        public SearchStatus Status { get; private set; }
+
+        public void Initialise(IGridProvider grid) {
+            _grid = grid;
+            _open = new FastPriorityQueue(_grid.Size.X * _grid.Size.Y);
+
+            Status = SearchStatus.Idle;
+        }
+
+        private double Heuristic(Cell cell, Cell goal) {
+            var dX = Math.Abs(cell.Location.X - goal.Location.X);
+            var dY = Math.Abs(cell.Location.Y - goal.Location.Y);
 
             // Octile distance
-            return PathingConstants.CardinalCost * (dX + dY)
-                   + (PathingConstants.DiagonalCost - 2 * PathingConstants.CardinalCost)
+            return 1 * (dX + dY) 
+                   + (Math.Sqrt(2) - 2 * 1) 
                    * Math.Min(dX, dY);
         }
 
-        public Cell[] Find(Cell start, Cell goal)
-        {
-            Data[start.Id].Parent = start;
-            _open.Enqueue(start, Heuristic(start, goal));
+        public void Reset() {
 
-            while (_open.Count > 0)
-            {
-                var node = _open.Dequeue();
+            _open.Clear();
+        }
 
-                if (node.Id == goal.Id)
-                    return BuildPath(start, goal);
+        public Cell[] Find(Cell start, Cell goal) {
 
-                Data[node.Id].Closed = true;
+            _open.Enqueue(start, 0);
+
+            var bounds = _grid.Size;
+
+            Cell node = null;
+
+            while (_open.Count > 0) {
+
+                node = _open.Dequeue();
+
+                node.Closed = true;
+                //_grid[node.Location].Closed = true;
 
                 var cBlock = false;
 
-                for (var i = 0; i < PathingConstants.Directions.Length; i++)
-                {
+                var g = node.G + 1;
+
+                if (goal.Location == node.Location) {
+                    break;
+                }
+
+                Vector2Int proposed = new Vector2Int(0, 0);
+
+                for (var i = 0; i < PathingConstants.Directions.Length; i++) {
+
                     var direction = PathingConstants.Directions[i];
 
-                    var proposed = new Vector2Int(
-                        node.Location.X + direction.X,
-                        node.Location.Y + direction.Y
-                    );
-
+                    proposed.X = node.Location.X + direction.X;
+                    proposed.Y = node.Location.Y + direction.Y;
+                    
                     // Bounds checking
-                    if (proposed.X < 0 || proposed.X >= _grid.Width ||
-                        proposed.Y < 0 || proposed.Y >= _grid.Height)
+                    if (proposed.X < 0 || proposed.X >= bounds.X ||
+                        proposed.Y < 0 || proposed.Y >= bounds.Y)
                         continue;
 
-                    var neighbour = _grid[proposed.X, proposed.Y];
+                    Cell neighbour = _grid[proposed];
 
-                    if (neighbour.Blocked)
-                    {
+                    if (neighbour.Blocked) {
+
                         if (i < 4)
+                        {
                             cBlock = true;
+                        }
+
                         continue;
                     }
 
                     // Prevent slipping between blocked cardinals by an open diagonal
                     if (i >= 4 && cBlock)
-                        continue;
-
-                    if (!Data[neighbour.Id].Closed)
                     {
-                        if (!_open.Contains(neighbour))
-                        {
-                            Data[neighbour.Id].G = float.PositiveInfinity;
-                            Data[neighbour.Id].Parent = null;
-                        }
+                        continue;
+                    }
 
-                        var gOld = Data[neighbour.Id].G;
+                    if (_grid[neighbour.Location].Closed) {
 
-                        // Compute Cost
-                        var g = Data[node.Id].G;
-                        if (g + direction.Cost < gOld)
-                        {
-                            Data[neighbour.Id].Parent = node;
-                            Data[neighbour.Id].G = g + direction.Cost;
-                        }
+                        continue;
+                    }
 
-                        // Compute Cost End
-                        var gNew = Data[neighbour.Id].G;
-                        if (gNew < gOld)
-                        {
-                            var priority = gNew + Heuristic(neighbour, goal);
-                            if (_open.Contains(neighbour))
-                                _open.UpdatePriority(neighbour, priority);
-                            else
-                                _open.Enqueue(neighbour, priority);
+                    if (!_open.Contains(neighbour)) {
+
+                        neighbour.G = g;
+                        neighbour.H = Heuristic(neighbour, node);
+                        _open.Enqueue(neighbour, neighbour.G + neighbour.H);
+                        neighbour.Parent = node;
+
+                        
+                    } else {
+                        if (g + neighbour.H < neighbour.F) {
+
+                            neighbour.G = g;
+                            neighbour.F = neighbour.G + neighbour.H;
+                            neighbour.Parent = node;
                         }
                     }
                 }
             }
 
-            return new Cell[0];
-        }
+            var path = new Stack<Cell>();
 
-        private Cell[] BuildPath(Cell start, Cell goal)
-        {
-            var current = goal;
-            var path = new Stack<Cell>(new[] {current});
-            while (current.Id != start.Id)
-                path.Push(current = Data[current.Id].Parent);
+            while (node != null) {
+                path.Push(node);
+                node = node.Parent;
+            }
+
             return path.ToArray();
         }
     }
+
 }

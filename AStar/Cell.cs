@@ -1,15 +1,22 @@
 namespace AStar
 {
-    public class Cell : FastPriorityQueueNode
-    {
-        public Vector2Int Location { get; }
-        public int Id { get; }
-        public bool Blocked { get; set; }
+    public class Cell {
 
-        public Cell(Vector2Int location, int id)
+        public int QueueIndex;
+
+        public Vector2Int Location;
+        public bool Blocked;
+
+        public double G;
+        public double H;
+        public double F;
+
+        public Cell Parent;
+        public bool Closed;
+
+        public Cell(Vector2Int location)
         {
             Location = location;
-            Id = id;
         }
 
         public override string ToString() => $"[{Location.X},{Location.Y}]";

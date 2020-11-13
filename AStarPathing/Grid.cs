@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using AStar;
 
 namespace AStarPathing
 {
-    public class Grid : IGrid
+    public class Grid : IGridProvider
     {
         private readonly Cell[,] _cells;
 
@@ -11,6 +12,7 @@ namespace AStarPathing
 
         public Cell this[int x, int y] => _cells[x, y];
 
+        public Vector2Int Size => new Vector2Int(Width, Height);
         public Cell this[Vector2Int location] => _cells[location.X, location.Y];
 
         public Grid(int width, int height)
@@ -19,9 +21,28 @@ namespace AStarPathing
             Height = height;
 
             _cells = new Cell[width, height];
-            for (var x = 0; x <= width - 1; x++)
-            for (var y = 0; y <= height - 1; y++)
-                _cells[x, y] = new Cell(new Vector2Int(x, y), x * width + y);
+
+            Reset();
+        }
+
+        public void Reset() {
+
+            for (var x = 0; x <= _cells.GetUpperBound(0); x++) {
+                for (var y = 0; y <= _cells.GetUpperBound(1); y++) {
+
+                    var cell = _cells[x, y];
+
+                    if (cell == null) {
+                        _cells[x, y] = new Cell(new Vector2Int(x, y));
+                    } else {
+                        cell.G = 0;
+                        cell.H = 0;
+                        cell.F = 0;
+                        cell.Closed = false;
+
+                    }
+                }
+            }
         }
 
         public int GetNodeId(Vector2Int location) => location.X * Width + location.Y;

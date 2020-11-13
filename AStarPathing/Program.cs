@@ -13,18 +13,14 @@ namespace AStarPathing
     {
         private static void Main(string[] args)
         {
-            var runs = 100;
+            var runs = 4;
 
-            var image = (Bitmap) Image.FromFile("grid.png");
+            var image = (Bitmap) Image.FromFile("cavern.gif");
 
             var width = image.Width;
             var height = image.Height;
 
             var grid = new Grid(width, height);
-
-            for (var x = 0; x < width; x++)
-            for (var y = 0; y < height; y++)
-                grid[x, y].Blocked = image.GetPixel(x, y).R > 128;
 
             if (!Directory.Exists("Paths"))
                 Directory.CreateDirectory("Paths");
@@ -34,15 +30,22 @@ namespace AStarPathing
             var times = new List<long>();
             var stepTimes = new List<double>();
 
-            var start = grid[width / 2, 0];
-            var goal = grid[width / 2, height - 1];
-
             for (var runIndex = 0; runIndex < runs; runIndex++)
             {
+                grid.Reset();
+
+                var start = grid[10, 10];
+                var goal = grid[width - 10, height - 10];
+
+                for (var x = 0; x < width; x++)
+                for (var y = 0; y < height; y++) {
+                    grid[x, y].Blocked = (image.GetPixel(x, y).R + image.GetPixel(x, y).G + image.GetPixel(x, y).B) / 3 < 128;
+                }
+
                 timer.Start();
 
-                var search = new AStarSearch(grid);
-
+                var search = new AStarSearch();
+                search.Initialise(grid);
 
                 var path = search.Find(start, goal);
                 timer.Stop();
@@ -71,7 +74,7 @@ namespace AStarPathing
         }
 
         private static void RenderPath(int width, int height, Cell start, Cell goal, IList<Cell> path,
-            AStarSearch search, IGrid grid, int runIndex, TimeSpan elapsed)
+            AStarSearch search, IGridProvider grid, int runIndex, TimeSpan elapsed)
         {
             var scalar = 10;
 
@@ -83,15 +86,19 @@ namespace AStarPathing
             {
                 graphics.Clear(Color.White);
 
+                int closedCount = 0;
+
                 for (var x = 0; x < width; x++)
                 for (var y = 0; y < height; y++)
-                    if (grid[x, y].Blocked)
+                    if (grid[new Vector2Int(x, y)].Blocked)
                         graphics.DrawRectangle(new Pen(new SolidBrush(Color.Black)), x * scalar - scalar / 2,
                             y * scalar - scalar / 2, scalar, scalar);
-                    else if (search.Data[x * width + y].Closed)
+                    else if (grid[new Vector2Int(x, y)].Closed) {
+                        closedCount++;
                         CircleAtPoint(graphics,
                             new PointF(x * scalar, y * scalar), 2,
                             Color.Gainsboro);
+                    }
 
                 graphics.DrawLines(new Pen(new SolidBrush(Color.LawnGreen), 2),
                     path.Select(n => new PointF(n.Location.X * scalar, n.Location.Y * scalar)).ToArray());
@@ -100,7 +107,7 @@ namespace AStarPathing
                 CircleAtPoint(graphics, new PointF(goal.Location.X * scalar, goal.Location.Y * scalar), 2, Color.Green);
 
                 graphics.DrawString(
-                    $"Elapsed: {elapsed.TotalMilliseconds:000}ms Closed: {search.Data.Count(x => x.Closed):00000}",
+                    $"Elapsed: {elapsed.TotalMilliseconds:000}ms Closed: {closedCount:00000}",
                     statsFont, new SolidBrush(Color.Black), 2, height * scalar - (statsFont.GetHeight(graphics) + 2));
 
                 image.Save(
