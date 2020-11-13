@@ -1,4 +1,3 @@
-![alt path result](https://i.imgur.com/UbmWx0G.png)
 ## High performance A* in C#
 
 This is a base repo I use to benchmark and improve the pathing algorithm used in various projects, with the visuals it outputs it could be used as an educational tool when 
